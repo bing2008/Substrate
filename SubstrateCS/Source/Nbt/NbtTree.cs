@@ -104,6 +104,11 @@ namespace Substrate.Nbt
                 _stream.Position = 0;
                 _stream.Read(buff, 0, 8);
             }
+            else
+            {
+                _stream.Position = 0;
+                buff = null;
+            }
             return buff;
         }
 

@@ -20,8 +20,11 @@ namespace Substrate.Nbt
         private Stream _stream = null;
         private TagNodeCompound _root = null;
         private string _rootName = "";
+        private byte[] _oemMagic = null;
 
         private static TagNodeNull _nulltag = new TagNodeNull();
+
+        public bool UseLittleEndian = false;
 
         /// <summary>
         /// Gets the root node of this tree.
@@ -85,9 +88,23 @@ namespace Substrate.Nbt
         {
             if (s != null) {
                 _stream = s;
+
+                _oemMagic = ReadOEM();
                 _root = ReadRoot();
                 _stream = null;
             }
+        }
+
+        private byte[] ReadOEM()
+        {
+            byte[] buff = new byte[8];
+            TagType type = (TagType)_stream.ReadByte();
+            if (type == TagType.TAG_STRING)
+            {
+                _stream.Position = 0;
+                _stream.Read(buff, 0, 8);
+            }
+            return buff;
         }
 
         /// <summary>
@@ -98,6 +115,11 @@ namespace Substrate.Nbt
         {
             if (s != null) {
                 _stream = s;
+
+                if(_oemMagic != null)
+                {
+                    _stream.Write(_oemMagic,0,8);
+                }
 
                 if (_root != null) {
                     WriteTag(_rootName, _root);
@@ -173,7 +195,7 @@ namespace Substrate.Nbt
             byte[] gzBytes = new byte[2];
             _stream.Read(gzBytes, 0, 2);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -187,7 +209,7 @@ namespace Substrate.Nbt
             byte[] gzBytes = new byte[4];
             _stream.Read(gzBytes, 0, 4);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -201,7 +223,7 @@ namespace Substrate.Nbt
             byte[] gzBytes = new byte[8];
             _stream.Read(gzBytes, 0, 8);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -215,7 +237,7 @@ namespace Substrate.Nbt
             byte[] gzBytes = new byte[4];
             _stream.Read(gzBytes, 0, 4);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -229,7 +251,7 @@ namespace Substrate.Nbt
             byte[] gzBytes = new byte[8];
             _stream.Read(gzBytes, 0, 8);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -243,7 +265,7 @@ namespace Substrate.Nbt
             byte[] lenBytes = new byte[4];
             _stream.Read(lenBytes, 0, 4);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -265,7 +287,8 @@ namespace Substrate.Nbt
             byte[] lenBytes = new byte[2];
             _stream.Read(lenBytes, 0, 2);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian)
+            {
                 Array.Reverse(lenBytes);
             }
 
@@ -299,7 +322,8 @@ namespace Substrate.Nbt
             byte[] lenBytes = new byte[4];
             _stream.Read(lenBytes, 0, 4);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian)
+            {
                 Array.Reverse(lenBytes);
             }
 
@@ -332,7 +356,7 @@ namespace Substrate.Nbt
             byte[] lenBytes = new byte[4];
             _stream.Read(lenBytes, 0, 4);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -345,7 +369,7 @@ namespace Substrate.Nbt
             byte[] buffer = new byte[4];
             for (int i = 0; i < length; i++) {
                 _stream.Read(buffer, 0, 4);
-                if (BitConverter.IsLittleEndian) {
+                if (UseLittleEndian) {
                     Array.Reverse(buffer);
                 }
                 data[i] = BitConverter.ToInt32(buffer, 0);
@@ -361,7 +385,7 @@ namespace Substrate.Nbt
             byte[] lenBytes = new byte[4];
             _stream.Read(lenBytes, 0, 4);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -374,7 +398,7 @@ namespace Substrate.Nbt
             byte[] buffer = new byte[8];
             for (int i = 0; i < length; i++) {
                 _stream.Read(buffer, 0, 8);
-                if (BitConverter.IsLittleEndian) {
+                if (UseLittleEndian) {
                     Array.Reverse(buffer);
                 }
                 data[i] = BitConverter.ToInt64(buffer, 0);
@@ -390,7 +414,7 @@ namespace Substrate.Nbt
             byte[] lenBytes = new byte[4];
             _stream.Read(lenBytes, 0, 4);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -403,7 +427,7 @@ namespace Substrate.Nbt
             byte[] buffer = new byte[2];
             for (int i = 0; i < length; i++) {
                 _stream.Read(buffer, 0, 2);
-                if (BitConverter.IsLittleEndian) {
+                if (UseLittleEndian) {
                     Array.Reverse(buffer);
                 }
                 data[i] = BitConverter.ToInt16(buffer, 0);
@@ -417,6 +441,7 @@ namespace Substrate.Nbt
         private TagNodeCompound ReadRoot ()
         {
             TagType type = (TagType)_stream.ReadByte();
+
             if (type == TagType.TAG_COMPOUND) {
                 _rootName = ReadString().ToTagString().Data; // name
                 return ReadValue(type) as TagNodeCompound;
@@ -506,7 +531,7 @@ namespace Substrate.Nbt
         {
             byte[] gzBytes = BitConverter.GetBytes(val.Data);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -517,7 +542,7 @@ namespace Substrate.Nbt
         {
             byte[] gzBytes = BitConverter.GetBytes(val.Data);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -528,7 +553,7 @@ namespace Substrate.Nbt
         {
             byte[] gzBytes = BitConverter.GetBytes(val.Data);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -539,7 +564,7 @@ namespace Substrate.Nbt
         {
             byte[] gzBytes = BitConverter.GetBytes(val.Data);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -550,7 +575,7 @@ namespace Substrate.Nbt
         {
             byte[] gzBytes = BitConverter.GetBytes(val.Data);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(gzBytes);
             }
 
@@ -561,7 +586,7 @@ namespace Substrate.Nbt
         {
             byte[] lenBytes = BitConverter.GetBytes(val.Length);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -576,7 +601,7 @@ namespace Substrate.Nbt
 
             byte[] lenBytes = BitConverter.GetBytes((short)gzBytes.Length);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -589,7 +614,7 @@ namespace Substrate.Nbt
         {
             byte[] lenBytes = BitConverter.GetBytes(val.Count);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -614,7 +639,7 @@ namespace Substrate.Nbt
         {
             byte[] lenBytes = BitConverter.GetBytes(val.Length);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -623,7 +648,7 @@ namespace Substrate.Nbt
             byte[] data = new byte[val.Length * 4];
             for (int i = 0; i < val.Length; i++) {
                 byte[] buffer = BitConverter.GetBytes(val.Data[i]);
-                if (BitConverter.IsLittleEndian) {
+                if (UseLittleEndian) {
                     Array.Reverse(buffer);
                 }
                 Array.Copy(buffer, 0, data, i * 4, 4);
@@ -636,7 +661,7 @@ namespace Substrate.Nbt
         {
             byte[] lenBytes = BitConverter.GetBytes(val.Length);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -645,7 +670,7 @@ namespace Substrate.Nbt
             byte[] data = new byte[val.Length * 8];
             for (int i = 0; i < val.Length; i++) {
                 byte[] buffer = BitConverter.GetBytes(val.Data[i]);
-                if (BitConverter.IsLittleEndian) {
+                if (UseLittleEndian) {
                     Array.Reverse(buffer);
                 }
                 Array.Copy(buffer, 0, data, i * 8, 8);
@@ -658,7 +683,7 @@ namespace Substrate.Nbt
         {
             byte[] lenBytes = BitConverter.GetBytes(val.Length);
 
-            if (BitConverter.IsLittleEndian) {
+            if (UseLittleEndian) {
                 Array.Reverse(lenBytes);
             }
 
@@ -667,7 +692,7 @@ namespace Substrate.Nbt
             byte[] data = new byte[val.Length * 2];
             for (int i = 0; i < val.Length; i++) {
                 byte[] buffer = BitConverter.GetBytes(val.Data[i]);
-                if (BitConverter.IsLittleEndian) {
+                if (UseLittleEndian) {
                     Array.Reverse(buffer);
                 }
                 Array.Copy(buffer, 0, data, i * 2, 2);
